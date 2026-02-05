@@ -6,7 +6,7 @@ This Azure Function converts a progressive JPEG image from a URL to PNG format.
 
 - Azure CLI installed
 - Azure Functions Core Tools installed
-- Python 3.8 or later
+- Python 3.11 or later
 
 ## Local Development
 
@@ -58,7 +58,7 @@ Send a GET or POST request to the function URL with a `url` parameter containing
 
 Example:
 ```
-GET https://myfunctionapp.azurewebsites.net/api/ConvertImageFunction?url=https://example.com/image.jpg
+GET https://image-converter-func.azurewebsites.net/api/convertimagefunction?url=https://example.com/image.jpg
 ```
 
 The response will be the PNG image data.
