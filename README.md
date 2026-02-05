@@ -1,6 +1,13 @@
 # Azure Image Converter Function
 
-This Azure Function converts a progressive JPEG image from a URL to PNG format.
+This Azure Function processes album art images (JPEG or PNG) and returns them as PNG format. It also calculates the dominant color from the image and includes it in the response header for UI theming (similar to Sonos app).
+
+## Features
+
+- Accepts JPEG and PNG images
+- Converts JPEG to PNG; returns PNG as-is
+- Calculates dominant color from album art
+- Returns dominant color in `X-Dominant-Color` header (hex format, e.g., #RRGGBB)
 
 ## Prerequisites
 
@@ -58,7 +65,10 @@ Send a GET or POST request to the function URL with a `url` parameter containing
 
 Example:
 ```
-GET https://image-converter-func.azurewebsites.net/api/convertimagefunction?url=https://example.com/image.jpg
+GET https://image-converter-func.azurewebsites.net/api/convertimagefunction?url=https://example.com/album-art.jpg
 ```
 
-The response will be the PNG image data.
+The response will be the PNG image data with a custom header containing the dominant color.
+
+**Response Headers:**
+- `X-Dominant-Color`: Hex color code (e.g., `#3a7bd5`) representing the dominant color from the album art
