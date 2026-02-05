@@ -50,9 +50,9 @@ def get_background_color(image):
     r, g, b = [x / 255.0 for x in most_common]
     h, l, s = colorsys.rgb_to_hls(r, g, b)
     
-    # Adjust for background: reduce saturation, adjust lightness for subtle tone
-    s = min(s * 0.4, 0.5)  # Reduce saturation
-    l = max(min(l * 0.8 + 0.2, 0.6), 0.3)  # Adjust lightness to mid-range
+    # Adjust for background: heavily reduce saturation, make darker and more muted
+    s = min(s * 0.2, 0.3)  # Heavily reduce saturation for muting
+    l = max(min(l * 0.6 + 0.15, 0.4), 0.2)  # Lower lightness range for darker tones
     
     # Convert back to RGB
     r, g, b = colorsys.hls_to_rgb(h, l, s)
