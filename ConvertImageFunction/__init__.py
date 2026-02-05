@@ -4,17 +4,62 @@ import requests
 from io import BytesIO
 from collections import Counter
 import colorsys
+import urllib.parse
+import mimetypes
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    # Validate request method
+    if req.method != 'GET':
+        return func.HttpResponse("Method not allowed", status_code=405)
+    
     image_url = req.params.get('url')
     if not image_url:
         return func.HttpResponse("Missing 'url' parameter", status_code=400)
     
+    # Validate URL format
     try:
-        response = requests.get(image_url, timeout=10)
+        parsed_url = urllib.parse.urlparse(image_url)
+        if not parsed_url.scheme or not parsed_url.netloc:
+            return func.HttpResponse("Invalid URL format", status_code=400)
+        if parsed_url.scheme.lower() not in ['http', 'https']:
+            return func.HttpResponse("Only HTTP and HTTPS URLs are allowed", status_code=400)
+    except Exception:
+        return func.HttpResponse("Invalid URL", status_code=400)
+    
+    try:
+        # Add headers for security and identification
+        headers = {
+            'User-Agent': 'Azure-Function-Image-Converter/1.0'
+        }
+        
+        response = requests.get(image_url, timeout=10, headers=headers, stream=True)
         response.raise_for_status()
-        image_data = response.content
-        image = Image.open(BytesIO(image_data))
+        
+        # Check content type
+        content_type = response.headers.get('content-type', '').lower()
+        if not content_type.startswith('image/'):
+            return func.HttpResponse("URL does not point to an image", status_code=400)
+        
+        # Check content length (limit to 10MB)
+        content_length = response.headers.get('content-length')
+        if content_length and int(content_length) > 10 * 1024 * 1024:
+            return func.HttpResponse("Image too large (max 10MB)", status_code=413)
+        
+        # Read image data with size limit
+        image_data = b''
+        for chunk in response.iter_content(chunk_size=8192):
+            image_data += chunk
+            if len(image_data) > 10 * 1024 * 1024:  # 10MB limit
+                return func.HttpResponse("Image too large (max 10MB)", status_code=413)
+        
+        # Validate image
+        try:
+            image = Image.open(BytesIO(image_data))
+            image.verify()  # Verify it's a valid image
+            image.close()
+            image = Image.open(BytesIO(image_data))  # Reopen after verify
+        except Exception:
+            return func.HttpResponse("Invalid image file", status_code=400)
         
         # Calculate background color based on dominant color
         background_color = get_background_color(image)
@@ -29,8 +74,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             image.save(png_buffer, format='PNG')
             png_buffer.seek(0)
             return func.HttpResponse(png_buffer.getvalue(), mimetype='image/png', headers={'X-Background-Color': color_hex})
+    except requests.exceptions.RequestException as e:
+        return func.HttpResponse("Failed to fetch image", status_code=400)
     except Exception as e:
-        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+        # Log the error but don't expose details
+        return func.HttpResponse("Internal server error", status_code=500)
 
 def get_background_color(image):
     # Convert to RGB if not already

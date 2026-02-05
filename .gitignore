@@ -5,3 +5,6 @@ local.settings.json
 .vscode/
 __pycache__/
 *.pyc
+.env
+.env.local
+.env.*.local

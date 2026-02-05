@@ -11,5 +11,15 @@
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle",
         "version": "[3.*, 4.0.0)"
+    },
+    "extensions": {
+        "http": {
+            "routePrefix": "api",
+            "customHeaders": {
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+                "X-XSS-Protection": "1; mode=block"
+            }
+        }
     }
 }
