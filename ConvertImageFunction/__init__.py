@@ -3,6 +3,7 @@ from PIL import Image
 import requests
 from io import BytesIO
 from collections import Counter
+import colorsys
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     image_url = req.params.get('url')
@@ -15,23 +16,23 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         image_data = response.content
         image = Image.open(BytesIO(image_data))
         
-        # Calculate dominant color
-        dominant_color = get_dominant_color(image)
-        color_hex = f"#{dominant_color[0]:02x}{dominant_color[1]:02x}{dominant_color[2]:02x}"
+        # Calculate background color based on dominant color
+        background_color = get_background_color(image)
+        color_hex = f"#{background_color[0]:02x}{background_color[1]:02x}{background_color[2]:02x}"
         
         # Check if already PNG
         if image.format == 'PNG':
-            return func.HttpResponse(image_data, mimetype='image/png', headers={'X-Dominant-Color': color_hex})
+            return func.HttpResponse(image_data, mimetype='image/png', headers={'X-Background-Color': color_hex})
         else:
             # Convert to PNG
             png_buffer = BytesIO()
             image.save(png_buffer, format='PNG')
             png_buffer.seek(0)
-            return func.HttpResponse(png_buffer.getvalue(), mimetype='image/png', headers={'X-Dominant-Color': color_hex})
+            return func.HttpResponse(png_buffer.getvalue(), mimetype='image/png', headers={'X-Background-Color': color_hex})
     except Exception as e:
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)
 
-def get_dominant_color(image):
+def get_background_color(image):
     # Convert to RGB if not already
     if image.mode != 'RGB':
         image = image.convert('RGB')
@@ -45,4 +46,14 @@ def get_dominant_color(image):
     # Find most common color
     most_common = Counter(pixels).most_common(1)[0][0]
     
-    return most_common
+    # Convert RGB to HSL
+    r, g, b = [x / 255.0 for x in most_common]
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    
+    # Adjust for background: reduce saturation, adjust lightness for subtle tone
+    s = min(s * 0.4, 0.5)  # Reduce saturation
+    l = max(min(l * 0.8 + 0.2, 0.6), 0.3)  # Adjust lightness to mid-range
+    
+    # Convert back to RGB
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return (int(r * 255), int(g * 255), int(b * 255))

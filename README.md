@@ -6,8 +6,8 @@ This Azure Function processes album art images (JPEG or PNG) and returns them as
 
 - Accepts JPEG and PNG images
 - Converts JPEG to PNG; returns PNG as-is
-- Calculates dominant color from album art
-- Returns dominant color in `X-Dominant-Color` header (hex format, e.g., #RRGGBB)
+- Calculates a complementary background color from album art (desaturated, mood-based tones like grey, brown, or burnt orange)
+- Returns background color in `X-Background-Color` header (hex format, e.g., #RRGGBB)
 
 ## Prerequisites
 
@@ -71,4 +71,4 @@ GET https://image-converter-func.azurewebsites.net/api/convertimagefunction?url=
 The response will be the PNG image data with a custom header containing the dominant color.
 
 **Response Headers:**
-- `X-Dominant-Color`: Hex color code (e.g., `#3a7bd5`) representing the dominant color from the album art
+- `X-Background-Color`: Hex color code (e.g., `#8B7355`) representing a complementary background color derived from the album art, adjusted for subtle, mood-based theming
