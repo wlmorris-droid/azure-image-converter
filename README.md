@@ -15,6 +15,7 @@ This Azure Function processes album art images (JPEG or PNG) and returns them as
 
 - Accepts JPEG and PNG images
 - Converts JPEG to PNG; returns PNG as-is
+- **Automatically resizes images**: If either width or height exceeds 400px, proportionally scales down until the larger dimension reaches 400px
 - Calculates a complementary background color from album art (heavily desaturated, darker, muted tones like deep grey, dark brown, or charcoal)
 - Returns background color in `X-Background-Color` header (hex format, e.g., #RRGGBB)
 

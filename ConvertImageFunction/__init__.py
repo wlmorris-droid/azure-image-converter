@@ -61,6 +61,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         except Exception:
             return func.HttpResponse("Invalid image file", status_code=400)
         
+        # Resize image if necessary (max dimension should be 400px)
+        image = resize_image_to_max_400(image)
+        
         # Calculate background color based on dominant color
         background_color = get_background_color(image)
         color_hex = f"#{background_color[0]:02x}{background_color[1]:02x}{background_color[2]:02x}"
@@ -105,3 +108,31 @@ def get_background_color(image):
     # Convert back to RGB
     r, g, b = colorsys.hls_to_rgb(h, l, s)
     return (int(r * 255), int(g * 255), int(b * 255))
+
+def resize_image_to_max_400(image):
+    """
+    Resize image proportionally so that the maximum dimension is 400px.
+    If both dimensions are already <= 400px, return the original image.
+    """
+    width, height = image.size
+    
+    # Check if resizing is needed
+    max_dimension = max(width, height)
+    if max_dimension <= 400:
+        return image
+    
+    # Calculate scale factor
+    scale_factor = 400.0 / max_dimension
+    
+    # Calculate new dimensions
+    new_width = int(width * scale_factor)
+    new_height = int(height * scale_factor)
+    
+    # Ensure minimum size of 1 pixel
+    new_width = max(1, new_width)
+    new_height = max(1, new_height)
+    
+    # Resize the image using high-quality resampling
+    resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    
+    return resized_image
