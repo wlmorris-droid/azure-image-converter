@@ -68,15 +68,11 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         background_color = get_background_color(image)
         color_hex = f"#{background_color[0]:02x}{background_color[1]:02x}{background_color[2]:02x}"
         
-        # Check if already PNG
-        if image.format == 'PNG':
-            return func.HttpResponse(image_data, mimetype='image/png', headers={'X-Background-Color': color_hex})
-        else:
-            # Convert to PNG
-            png_buffer = BytesIO()
-            image.save(png_buffer, format='PNG')
-            png_buffer.seek(0)
-            return func.HttpResponse(png_buffer.getvalue(), mimetype='image/png', headers={'X-Background-Color': color_hex})
+        # Convert resized image to PNG
+        png_buffer = BytesIO()
+        image.save(png_buffer, format='PNG')
+        png_buffer.seek(0)
+        return func.HttpResponse(png_buffer.getvalue(), mimetype='image/png', headers={'X-Background-Color': color_hex})
     except requests.exceptions.RequestException as e:
         return func.HttpResponse("Failed to fetch image", status_code=400)
     except Exception as e:
