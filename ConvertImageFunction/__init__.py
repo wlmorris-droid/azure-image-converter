@@ -16,6 +16,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     if not image_url:
         return func.HttpResponse("Missing 'url' parameter", status_code=400)
     
+    # Get optional size parameter
+    size_param = req.params.get('size')
+    max_size = 320  # default
+    if size_param:
+        try:
+            max_size = int(size_param)
+            if max_size <= 0 or max_size > 2000:  # reasonable limits
+                return func.HttpResponse("Invalid 'size' parameter (must be 1-2000)", status_code=400)
+        except ValueError:
+            return func.HttpResponse("Invalid 'size' parameter (must be integer)", status_code=400)
+    
     # Validate URL format
     try:
         parsed_url = urllib.parse.urlparse(image_url)
@@ -61,8 +72,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         except Exception:
             return func.HttpResponse("Invalid image file", status_code=400)
         
-        # Resize image if necessary (max dimension should be 400px)
-        image = resize_image_to_max_400(image)
+        # Resize image if necessary (max dimension should be max_size px)
+        image = resize_image_to_max(image, max_size)
         
         # Calculate background color based on dominant color
         background_color = get_background_color(image)
@@ -97,28 +108,27 @@ def get_background_color(image):
     r, g, b = [x / 255.0 for x in most_common]
     h, l, s = colorsys.rgb_to_hls(r, g, b)
     
-    # Adjust for background: heavily reduce saturation, make darker and more muted
-    s = min(s * 0.2, 0.3)  # Heavily reduce saturation for muting
-    l = max(min(l * 0.6 + 0.15, 0.4), 0.2)  # Lower lightness range for darker tones
+    # Adjust for background: reduce saturation to 90%, make darker and more muted
+    s = min(s * 0.9, 0.9)  # Reduce saturation to 90% for muting
+    l = max(min(l * 0.5 + 0.05, 0.25), 0.05)  # Lower lightness range for darker tones
     
     # Convert back to RGB
     r, g, b = colorsys.hls_to_rgb(h, l, s)
     return (int(r * 255), int(g * 255), int(b * 255))
 
-def resize_image_to_max_400(image):
+def resize_image_to_max(image, max_dimension):
     """
-    Resize image proportionally so that the maximum dimension is 400px.
-    If both dimensions are already <= 400px, return the original image.
+    Resize image proportionally so that the maximum dimension is max_dimension px.
+    If both dimensions are already <= max_dimension, return the original image.
     """
     width, height = image.size
     
     # Check if resizing is needed
-    max_dimension = max(width, height)
-    if max_dimension <= 400:
+    if max(width, height) <= max_dimension:
         return image
     
     # Calculate scale factor
-    scale_factor = 400.0 / max_dimension
+    scale_factor = max_dimension / max(width, height)
     
     # Calculate new dimensions
     new_width = int(width * scale_factor)
